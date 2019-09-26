@@ -1,0 +1,15 @@
+<% include ../layouts/header %>
+
+<h1>Delete Account: <%= user.username %></h1>
+
+<hr>
+<p>
+  Are you sure you want to delete this account?
+  <form method='POST' action='/users/<%= user._id %>/delete'>
+    <input type="hidden" name="id" value="<%= user._id %>">
+    <button type='submit' class="btn btn-danger">Yes - Delete Account</button>
+    <a href="/users/<%= user.id %>" class="btn btn-primary ml-4">No - Cancel</a>
+  </form>
+</p>
+
+<% include ../layouts/footer %>

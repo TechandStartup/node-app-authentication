@@ -1,0 +1,37 @@
+<% include ../layouts/header %>
+
+<h1>User Settings</h1>
+
+<% include ../layouts/form-errors %>
+
+<form method="POST" action="/users/<%= user._id %>/update" class='card mt-3 p-3'>
+  <div class='form-group'>
+    <label for="username">Userame</label>
+    <input type="text" name="username" class="form-control" value="<%= typeof user === 'undefined' ? '' : user.username %>" maxlength="50" required>
+  </div>
+
+  <div class='form-group'>
+    <label for="email">Email</label>
+    <input type="email" name="email" class="form-control" value="<%= typeof user === 'undefined' ? '' : user.email %>" required>
+  </div>
+
+  <fieldset class='card bg-light p-3'>
+    <label for="password">Change Password (must be at least 6 characters)</label>
+    <input type="password" name="password" class="form-control" minlength="6" maxlength="32">
+
+    <label for="passwordConfirmation">Confirm Password</label>
+    <input type="password" name="passwordConfirmation" class="form-control">
+  </fieldset>
+
+  <div class="mt-3">
+    <button class="btn btn-primary" type="submit">Submit</button>
+    <a href="/users/<%= user._id %>" class='btn btn-secondary float-right'>Cancel</a>
+  </div>
+</form>
+
+<hr>
+
+<h3>Delete Account</h3>
+<a href="/users/<%= user._id %>/delete" class='btn btn-danger'>Delete</a>
+
+<% include ../layouts/footer %>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>
+      <%= typeof title === 'undefined' ? 'Node-App-Authentication' : title %>
+    </title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+  </head>
+  <body>
+    <nav>
+      <a href="/">Home</a>
+      <% if(!currentUser){ %>
+        <a class="nav-link" href="/signup">Sign Up</a>
+        <a class="nav-link" href="/login">Log In</a> 
+      <% } else { %>
+        <a href="/protected">protected</a>
+        <a href="/users">users</a>        
+        <a href="/users/<%= currentUser.id %>"><%= Boolean(currentUser.username) && currentUser.username %> Profile</a>
+        <a href="/users/<%= currentUser.id %>/edit">Settings</a>
+        <a href="/logout">Log Out</a>         
+      <% } %>
+    </nav>
+
+    <!-- Flash messages -->
+    <% if(Object.keys(messages).length !== 0) { %>
+      <div role="alert">
+        <%= Object.values(messages)[0] %>
+      </div>
+    <% } %>

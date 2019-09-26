@@ -1,0 +1,116 @@
+Validation options:
+1. Mongoose.js validators
+2. Roll your own.a
+3. Express-validator
+Express validator is built on top of the validator package.
+
+All options must take into account that the validation for create and update are mostly the same but differ on two points:
+• password field is required on create but not on update.
+• checking if email already exists on create but on update you check that is exists but is not the same as the one submitted.
+
+Question: Where to place the validators:
+1. In the controller actions.
+Pros: 
+• validation code is kept together with the code that runs directly after it. No jumping around from file to file.
+Cons: 
+• Makes for big create and update controller actions.
+• Duplicate create and update validation code.
+
+2. As middleware directly in the routes. 
+Something like:
+// routes/index.js
+router.post('/signup', [
+  body('username').trim().not().isEmpty().withMessage('Username cannot be blank.'),
+  body('email')
+    .not().isEmpty().withMessage('Email cannot be blank.')
+    .isEmail().withMessage('Email format is invalid.')
+    .normalizeEmail()
+    .custom((value) => {
+      return User.findOne({email: value}).then(user => {
+        if (user) {
+          return Promise.reject('Email is already in use');
+        }
+      });
+    }),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters.')
+    .custom((value, { req }) => {
+      if (value !== req.body.passwordConfirmation) {
+        throw new Error('Password confirmation does not match password');
+      }
+      return true;    
+    }
+  )
+  ], authController.signup);
+• This is not a viable option. Makes the route too bloated.
+
+3. As a separate variable in the controller file. Something like:
+// controllers/authController.js
+exports.userValidation = [
+  body('username').trim().not().isEmpty().withMessage('Username cannot be blank.'),
+  body('email')
+    .not().isEmpty().withMessage('Email cannot be blank.')
+    .isEmail().withMessage('Email format is invalid.')
+    .normalizeEmail()
+    .custom((value) => {
+      return User.findOne({email: value}).then(user => {
+        if (user) {
+          return Promise.reject('Email is already in use');
+        }
+      });
+    }),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters.')
+    .custom((value, { req }) => {
+      if (value !== req.body.passwordConfirmation) {
+        throw new Error('Password confirmation does not match password');
+      }
+      return true;    
+    }
+  )
+]
+
+Then add it as middleware in the route. authController is already imported.
+// routes/index.js
+router.post('/signup', authController.userValidation, authController.signup);
+Cons: 
+• This makes for a messy controller file.
+
+4. Put it in the model file:
+// models/user.js
+const userValidation = [
+  body('username').trim().not().isEmpty().withMessage('Username cannot be blank.'),
+  body('email')
+    .not().isEmpty().withMessage('Email cannot be blank.')
+    .isEmail().withMessage('Email format is invalid.')
+    .normalizeEmail()
+    .custom((value) => {
+      return User.findOne({email: value}).then(user => {
+        if (user) {
+          return Promise.reject('Email is already in use');
+        }
+      });
+    }),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters.')
+    .custom((value, { req }) => {
+      if (value !== req.body.passwordConfirmation) {
+        throw new Error('Password confirmation does not match password');
+      }
+      return true;    
+    }
+  )
+]
+const User = mongoose.model('User', userSchema);
+module.exports = {
+  User,
+  userValidation
+}
+Then import two things from the model and add the validation as middleware.
+// routes/index.js
+const {User, userValidation} = require('../models/user');
+...
+router.post('/signup', userValidation, authController.signup);
+// And modify the imports of the model whereever you use it.
+// controllers/authController.js and usersController.js
+const { User } = require('../models/user');
+
+Cons:
+• Minor point but now you have to do multiple imports/exports to/from the model file.
