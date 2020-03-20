@@ -1,29 +1,52 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>
-      <%= typeof title === 'undefined' ? 'Node-App-Authentication' : title %>
-    </title>
-    <link rel='stylesheet' href='/stylesheets/style.css' />
-  </head>
-  <body>
-    <nav>
-      <a href="/">Home</a>
-      <% if(!currentUser){ %>
-        <a class="nav-link" href="/signup">Sign Up</a>
-        <a class="nav-link" href="/login">Log In</a> 
-      <% } else { %>
-        <a href="/protected">protected</a>
-        <a href="/users">users</a>        
-        <a href="/users/<%= currentUser.id %>"><%= Boolean(currentUser.username) && currentUser.username %> Profile</a>
-        <a href="/users/<%= currentUser.id %>/edit">Settings</a>
-        <a href="/logout">Log Out</a>         
-      <% } %>
-    </nav>
+<head>
+  <title><%= typeof title === 'undefined' ? 'Node-App-Authentication' : title %></title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+  <link rel='stylesheet' href='/stylesheets/style.css' />
+  <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item"><a href="/" class='nav-link'>Home</a></li>
+        </ul>
 
-    <!-- Flash messages -->
+        <ul class="navbar-nav ml-auto">
+          <% if(!currentUser){ %>
+            <li class="nav-item"><a class="nav-link" href="/signup">Sign Up</a></li>
+            <li class="nav-item"><a class="nav-link" href="/login">Log In</a></li>   
+          <% } else { %>
+            <li class="nav-item"><a class="nav-link" href="/protected">Protected</a></li>
+            <li class="nav-item"><a class="nav-link" href="/users">Users</a></li>  
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <%= Boolean(currentUser.username) && currentUser.username %> Account
+              </a>
+              <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+                <a class="dropdown-item" href="/users/<%= currentUser.id %>">Profile</a>
+                <a class="dropdown-item" href="/users/<%= currentUser.id %>/update">Settings</a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="/logout">Log Out</a>
+              </div>
+            </li>             
+          <% } %>
+        </ul>
+      </div>
+    </div>
+  </nav>
+  <div class="container">
+    <!-- Flash messages -->    
     <% if(Object.keys(messages).length !== 0) { %>
-      <div role="alert">
+      <div class="alert alert-<%= Object.keys(messages)[0] %> mt-2" role="alert">
+        <button type="button" class="close" data-dismiss="alert">x</button>
         <%= Object.values(messages)[0] %>
       </div>
     <% } %>

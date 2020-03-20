@@ -8,7 +8,6 @@ const jwt = require('jsonwebtoken');
 const logger = require('morgan');
 const mongoose = require('mongoose');
 require('dotenv').config();
-
 const router = require('./routes/index');
 
 const app = express();
@@ -49,8 +48,6 @@ app.use((req, res, next) => {
 });
 
 app.use('/', router);
-
-
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

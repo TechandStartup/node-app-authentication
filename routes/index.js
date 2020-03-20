@@ -11,10 +11,10 @@ router.get('/protected', auth.isLoggedIn, pagesController.protected);
 
 // Auth routes
 router.get('/signup', authController.signupPage);
-router.post('/signup', authController.signup);
+router.post('/signup', authController.validateSignup, authController.signup);
 router.get('/activate-account', authController.activateAccount);
 router.get('/login', authController.loginPage);
-router.post('/login', authController.login);
+router.post('/login', authController.validateLogin, authController.login);
 router.get('/logout', authController.logout);
 router.get('/forgot-password', authController.forgotPasswordPage);
 router.post('/forgot-password', authController.forgotPassword);
@@ -25,7 +25,8 @@ router.post('/reset-password', authController.resetPassword);
 router.get('/users', auth.isAdmin, usersController.list);
 router.get('/users/:id', auth.isCorrectUser, usersController.details);
 router.get('/users/:id/update', auth.isCorrectUser, usersController.updatePage);
-router.post('/users/:id/update', auth.isCorrectUser, usersController.update);
+router.post('/users/:id/update', auth.isCorrectUser, 
+            usersController.validateForm, usersController.update);
 router.get('/users/:id/delete', auth.isCorrectUser, usersController.deletePage);
 router.post('/users/:id/delete', auth.isCorrectUser, usersController.delete);
 

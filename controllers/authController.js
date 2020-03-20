@@ -1,28 +1,43 @@
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
-const path = require('path');
+const jwt = require('jsonwebtoken');
+const cryptoRandomString = require('crypto-random-string');
 const sgMail = require('@sendgrid/mail');
 const ejs = require('ejs');
-const cryptoRandomString = require('crypto-random-string');
-const createError = require('http-errors');
 const User = require('../models/user');
 
-// GET /user/create
+/* SIGNUP */
+
+exports.validateSignup = [
+  // validate username not empty.
+  body('username').trim().not().isEmpty().withMessage('Username cannot be blank.'),
+  // change email to lowercase, validate not empty, valid format, not in use.
+  body('email')
+    .not().isEmpty().withMessage('Email cannot be blank.')
+    .isEmail().withMessage('Email format is invalid.')
+    .normalizeEmail()
+    .custom((value) => {
+      return User.findOne({email: value}).then(user => {
+        if (user) {
+          return Promise.reject('Email is already in use');
+        }
+      });
+    }),
+  // Validate password at least 6 chars, passwordConfirmation matches password.
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters.')
+    .custom((value, { req }) => {
+      if (value !== req.body.passwordConfirmation) {
+        throw new Error('Password confirmation does not match password');
+      }
+      // Indicates the success of this synchronous custom validator
+      return true;    
+    }
+  )  
+];
+
+// GET /signup
 exports.signupPage = (req, res, next) => {
   res.render('auth/signup', { title: 'Signup' });
-};
-
-// POST /user/create
-exports.signupO = async (req, res, next) => {
-  try {
-    req.body.password = await bcrypt.hash(req.body.password, 10);
-    const user = await User.create(req.body);
-    req.flash('success', 'Account Created.');
-    res.redirect(`/users/${user._id}`);
-  } catch (err) {
-    next(err);
-  }
 };
 
 // Helper function for signup action
@@ -49,71 +64,44 @@ const sendActivationEmail = async (username, email, token) => {
   }
 };
 
-exports.signup = [
-  // validate username not empty.
-  body('username').trim().not().isEmpty().withMessage('Username cannot be blank.'),
-  // change email to lowercase, validate not empty, valid format, not in use.
-  body('email')
-    .not().isEmpty().withMessage('Email cannot be blank.')
-    .isEmail().withMessage('Email format is invalid.')
-    .normalizeEmail()
-    .custom((value) => {
-      return User.findOne({email: value}).then(user => {
-        if (user) {
-          return Promise.reject('Email is already in use');
-        }
-      });
-    }),
-  // Validate password at least 6 chars, passwordConfirmation matches password.
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters.')
-    .custom((value, { req }) => {
-      if (value !== req.body.passwordConfirmation) {
-        throw new Error('Password confirmation does not match password');
-      }
-      // Indicates the success of this synchronous custom validator
-      return true;    
-    }
-  ),
-  async (req, res, next) => {
-    // Create object of any validation errors from the request.
-    const errors = validationResult(req);
-    // if errors send the errors and original request body back.
-    if (!errors.isEmpty()) {
-      res.render('auth/signup', { user: req.body, errors: errors.array() });
-    }
-    try {
-      const token = await cryptoRandomString({length: 10, type: 'url-safe'});
-      const username = req.body.username;
-      const email = req.body.email;
-      sendActivationEmail(username, email, token);
-      const hashedPassword = await bcrypt.hash(req.body.password, 10);
-      const user = User.create({
-        username: username,
-        email: email,
-        password: hashedPassword,
-        activationToken: token
-      });
-      req.flash('info', 'Please check your email to activate your account.');
-      res.redirect('/');
-    } catch (err) {
-      next(err);
-    }
-  }    
-];
+// POST /signup
+exports.signup = async (req, res, next) => {
+  // Create object of any validation errors from the request.
+  const errors = validationResult(req);
+  // if errors send the errors and original request body back.
+  if (!errors.isEmpty()) {
+    return res.render('auth/signup', { user: req.body, errors: errors.array() });
+  }
+  try {
+    const token = await cryptoRandomString({length: 10, type: 'url-safe'});
+    const username = req.body.username;
+    const email = req.body.email;
+    sendActivationEmail(username, email, token);
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
+    const user = User.create({
+      username: username,
+      email: email,
+      password: hashedPassword,
+      activationToken: token
+    });
+    req.flash('info', 'Please check your email to activate your account.');
+    res.redirect('/');
+  } catch (err) {
+    next(err);
+  }
+};
 
 // GET /activate-account
 exports.activateAccount = async (req, res, next) => { 
   if (!req.query.token || !req.query.email) {
     req.flash('warning', 'Token or email was not provided.');
     return res.redirect('/');
-    // return next(createError(400, 'Token or email was not provided.'))
   }
   const user = await User.findOne({ email: req.query.email }); 
   if (!user || user.activationToken !== req.query.token) {
     req.flash('warning', 'Could not activate account.');
     return res.redirect('/');
-    // return next(createError(422, 'Could not activate account.'))
-  }
+  } 
   User.findByIdAndUpdate(user._id, {activated: true}, (err) => {
     if (err) { 
       return next(err); 
@@ -130,57 +118,59 @@ exports.activateAccount = async (req, res, next) => {
   }); 
 };
 
+/* LOGIN */
+
 // GET /login
 exports.loginPage = (req, res, next) => {       
   res.render('auth/login', { title: "Log In" });
 };
 
 // POST /login
-exports.login = [
+exports.validateLogin = [
   // change email to lowercase, validate not empty.
   body('email')
-    .not().isEmpty().withMessage('Email cannot be blank.')
-    .normalizeEmail()
-    // custom validator gets user object from DB from email, rejects if not present, compares user.password to hashed password from login.
-    .custom((value, {req}) => {
-      return User.findOne({email: value}).then(async (user) => {
-        if (!user) {
-          return Promise.reject('Email or Password are incorrect.');
-        }
-        const passwordIsValid = await bcrypt.compareSync(req.body.password, user.password);
-        if (!passwordIsValid) {
-          // return Promise.reject('Email or Password are incorrect.');
-          throw new Error('Email or Password are incorrect.')
-        }
-        if (user.activated === false) {
-          throw new Error('Account not activated. Check your email for activation link.') 
-        }
-      });
-    }),
-  async (req, res, next) => {
-    // Create object of any validation errors from the request.
-    const errors = validationResult(req);
-    // if errors send the errors and original request body back.
-    if (!errors.isEmpty()) {
-      res.render('auth/login', { user: req.body, errors: errors.array() });
-    } else {
-      User.findOne({email: req.body.email}).then((user) => {
-        // the jwt and cookie each have their own expirations.
-        const token = jwt.sign(
-          { user: { id: user._id, username: user.username, role: user.role }}, 
-          process.env.SECRET, 
-          { expiresIn: '1y' }
-        );
-        // Assign the jwt to the cookie. 
-        // Adding option secure: true only allows https. 
-        // maxAge 3600000 is 1 hr (in milliseconds). Below is 1 year.
-        res.cookie('jwt', token, { httpOnly: true, maxAge: 31536000000 });
-        req.flash('success', 'You are logged in.');
-        res.redirect('/');
-      });
-    }
+  .not().isEmpty().withMessage('Email cannot be blank.')
+  .normalizeEmail()
+  // custom validator gets user object from DB from email, rejects if not present, compares user.password to hashed password from login.
+  .custom((value, {req}) => {
+    return User.findOne({email: value}).then(async (user) => {
+      if (!user) {
+        return Promise.reject('Email or Password are incorrect.');
+      }
+      const passwordIsValid = await bcrypt.compareSync(req.body.password, user.password);
+      if (!passwordIsValid) {
+        // return Promise.reject('Email or Password are incorrect.');
+        throw new Error('Email or Password are incorrect.')
+      }
+      if (user.activated === false) {
+        throw new Error('Account not activated. Check your email for activation link.') 
+      }
+    });
+  }),
+]
+exports.login = async (req, res, next) => {
+  // Create object of any validation errors from the request.
+  const errors = validationResult(req);
+  // if errors send the errors and original request body back.
+  if (!errors.isEmpty()) {
+    res.render('auth/login', { user: req.body, errors: errors.array() });
+  } else {
+    User.findOne({email: req.body.email}).then((user) => {
+      // the jwt and cookie each have their own expirations.
+      const token = jwt.sign(
+        { user: { id: user._id, username: user.username, role: user.role }}, 
+        process.env.SECRET, 
+        { expiresIn: '1y' }
+      );
+      // Assign the jwt to the cookie. 
+      // Adding option secure: true only allows https. 
+      // maxAge 3600000 is 1 hr (in milliseconds). Below is 1 year.
+      res.cookie('jwt', token, { httpOnly: true, maxAge: 31536000000 });
+      req.flash('success', 'You are logged in.');
+      res.redirect('/');
+    });
   }
-];
+};
 
 // GET /logout
 exports.logout = (req, res, next) => {
@@ -188,6 +178,8 @@ exports.logout = (req, res, next) => {
   req.flash('info', 'Logged out.');
   res.redirect('/');
 };
+
+/* PASSWORD RESET */
 
 // GET /password-reset
 exports.forgotPasswordPage = (req, res, next) => {   

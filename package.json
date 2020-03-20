@@ -6,20 +6,20 @@
     "start": "node ./bin/www"
   },
   "dependencies": {
-    "@sendgrid/mail": "^6.4.0",
-    "bcrypt": "^3.0.6",
+    "@sendgrid/mail": "^6.5.5",
+    "bcrypt": "^4.0.1",
     "cookie-parser": "~1.4.4",
-    "crypto-random-string": "^3.0.1",
+    "crypto-random-string": "^3.2.0",
     "debug": "~2.6.9",
-    "dotenv": "^8.1.0",
+    "dotenv": "^8.2.0",
     "ejs": "~2.6.1",
     "express": "~4.16.1",
     "express-flash": "0.0.2",
-    "express-session": "^1.16.2",
-    "express-validator": "^6.2.0",
+    "express-session": "^1.17.0",
+    "express-validator": "^6.4.0",
     "http-errors": "~1.6.3",
     "jsonwebtoken": "^8.5.1",
-    "mongoose": "^5.7.1",
+    "mongoose": "^5.9.4",
     "morgan": "~1.9.1"
   }
 }

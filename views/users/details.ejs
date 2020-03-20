@@ -1,15 +1,13 @@
 <% include ../layouts/header %>
 
-<h1>User Info Page</h1>
+<h1 class='mt-4'><%= user.username %> Account</h1>
 <hr>
-<p><b>ID:</b> <%= user.id %></p>
-<p><b>Username:</b> <%= user.username %></p>
+<p><b>Account ID:</b> <%= user.id %></p>
+<p><b>Username: </b><%= user.username %></p>
 <p><b>Email:</b> <%= user.email %></p>
+<p><b>Member Since:</b> <%= user.createdAt.toLocaleString("en-US", {month: 'long', day: 'numeric', year: 'numeric'}); %></p>
 <% if (user.role) { %>
   <p><b>Role:</b> <%= user.role %></p>
 <% } %>
-
-<a href="/users/<%= user.id %>/update" class='btn btn-info'>Update</a>
-<a href="/users/<%= user.id %>/delete">Delete</a>
 
 <% include ../layouts/footer %>

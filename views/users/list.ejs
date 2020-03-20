@@ -1,10 +1,10 @@
 <% include ../layouts/header %>
 
-<h1>Users</h1>
+<h1 class='mt-4'>Users</h1>
 
 <ul class='list-group'>
   <% users.forEach(function(user) { %>
-    <li class='list-group-item'><a href="/users/<%= user.id %>"><%= user.username %> - <%= user.email %></a></li>
+    <li class='list-group-item'><%= user.username %> - <%= user.email %></li>
   <% }); %>
 </ul>
 
